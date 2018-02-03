@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <!-- com.blog.mapping.blogMapper -->
+<mapper namespace="com.blog.idal.IDalTalk">
+  
+    <resultMap type="com.blog.entity.blog_tb_talk" id="resultListTalk">
+        <id column="ID" property="ID"/>
+       
+    </resultMap>
+    
+    <select id="query" 
+        resultMap="resultListTalk">
+       select   *  from blog_tb_Talk where UserID=#{UserID} and IsTemp=0 and IsDisabled=0 order by TalkDatetime DESC limit 0,100
+    </select>
+    
+</mapper>

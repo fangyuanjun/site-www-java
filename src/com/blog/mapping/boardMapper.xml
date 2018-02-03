@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <!-- com.blog.mapping.blogMapper -->
+<mapper namespace="com.blog.idal.IDalBoard">
+  
+    <resultMap type="com.blog.entity.blog_tb_board" id="resultListBoard">
+        <id column="ID" property="ID"/>
+       
+    </resultMap>
+    
+    <select id="query" 
+        resultMap="resultListBoard">
+      select * from blog_tb_Board where 1=1 and state=1
+    </select>
+    
+    
+    <insert id="insert" 
+         parameterType="com.blog.entity.blog_tb_board">
+     insert into blog_tb_board(ID,PID,UserID,Author,Email,IP,Mark,State,SupportCount,AgainstCount,ADD_DATE,UPDATE_DATE) 
+     values(#{ID},#{PID},#{UserID},#{Author},#{Email},#{IP},#{Mark},#{State},#{SupportCount},#{AgainstCount},#{ADD_DATE},#{UPDATE_DATE})
+    </insert>
+    
+    <update id="update"
+        parameterType="com.blog.entity.blog_tb_board">
+        update blog_tb_board set PID=#{PID} where ID=#{ID}
+    </update>
+    
+    <delete id="delete">
+        delete from blog_tb_board where ID=#{ID}
+    </delete>
+    
+     <update id="updateAgainstCount">
+        update blog_tb_board set AgainstCount=AgainstCount+1 where ID=#{ID}
+    </update>
+    
+      <update id="updateSupportCount">
+        update blog_tb_board set SupportCount=SupportCount+1 where ID=#{ID}
+    </update>
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <!-- com.blog.mapping.blogMapper -->
+<mapper namespace="com.blog.idal.IDalFiles">
+  
+    <resultMap type="com.blog.entity.blog_tb_photo" id="resultListPhoto">
+        <id column="ID" property="ID"/>
+       
+    </resultMap>
+    
+    <select id="getArticlePhotos" 
+        resultMap="resultListPhoto">
+       select f.fileID as ID,f.fileThumbUrl as ThumbUrl,f.fileUrl as Url,f.fileName as Display,f.Exif from blog_tb_fileRelation r inner join blog_tb_file  f on r.fileID=f.fileID where f.fileIsImage=1 and r.objectID=#{objectID}
+    </select>
+    
+</mapper>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <!-- com.blog.mapping.blogMapper -->
+<mapper namespace="com.blog.idal.IDalAlbum">
+  
+    <resultMap type="com.blog.model.AlbumModel" id="resultListAlbum">
+        <id column="ID" property="id"/>
+        <result column="Display" property="display"/>
+    </resultMap>
+    
+    <select id="queryAlbum" 
+        resultMap="resultListAlbum">
+       SELECT
+	a.ID,
+	a.UserID,
+  a. NAME,
+	a.Display,
+	a.ADD_DATE,
+	a.Permission,
+	a.UPDATE_DATE,
+	IFNULL(c.cc, 0) AS PhotoCount,
+	CASE WHEN IFNULL(CoverUrl, '') = '' THEN p.ThumbUrl ELSE CoverUrl END AS CoverUrl
+FROM
+	blog_tb_Album AS a
+LEFT  JOIN (
+	SELECT COUNT(*) AS cc,AlbumID
+	FROM
+		blog_tb_Photo
+	GROUP BY
+		AlbumID
+) AS c ON c.AlbumID = a.ID
+LEFT OUTER JOIN (
+	SELECT
+		AlbumID,	MIN(ThumbUrl) AS ThumbUrl
+	FROM
+		blog_tb_Photo AS blog_tb_Photo_1
+	GROUP BY
+		AlbumID
+) AS p ON p.AlbumID = a.ID 
+where a.UserID=#{UserID}
+    </select>
+    
+    
+    
+    
+    <resultMap type="com.blog.entity.blog_tb_photo" id="resultListPhoto">
+        <id column="ID" property="ID"/>
+       
+    </resultMap>
+    
+    <select id="queryPhotos" 
+        resultMap="resultListPhoto">
+       select * from blog_tb_Photo where AlbumID=#{AlbumID} and IsDelete=0
+    </select>
+    
+    
+     <select id="getAlbumEntity" 
+        resultType="com.blog.entity.blog_tb_album">
+       select * from blog_tb_album where ID=#{ID} and Permission=0
+    </select>
+</mapper>

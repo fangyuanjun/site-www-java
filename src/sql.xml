@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<db>
+    <sql id="getBlogMaster">
+         /*博客信息*/
+	 select * from blog_tb_blog  where blogID=?  ;
+
+	/*获取浏览次数和回复次数*/
+     select COUNT(blog_tb_article.articleID) as TotalArticleCount,  IFNULL( sum(articleClickTimes),0) as TotalArticleViewCount,IFNULL(sum(articleCommentTimes),0) as TotalArticleCommentCount from blog_tb_article
+	 left join blog_tb_article_extend on blog_tb_article_extend.articleID=blog_tb_article.articleID
+	  where blogID=?   ;
+
+	  /*获取菜单*/
+	select menuUrl, menuDisplay,menuTarget,menuOrder from blog_tb_menu where blogID=? and menuIsDisabled=0 	order by menuOrder DESC  ;
+
+	/*获取前10条友情链接列表 */
+	select  linkID,blogID,linkName,linkUrl,linkPic,linkOrder,linkIsDisabled,ADD_DATE,UPDATE_DATE from blog_tb_link where blogID=? and linkIsDisabled=0 order by linkOrder desc limit 0,10
+    </sql>
+    
+    <sql id="getBlogIndex">
+         <![CDATA[
+          /*最新文章 前10条*/
+	select articleID,articleTitle  from blog_tb_article 
+	 LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+	where blog_tb_article.blogID=? and articleIsDisabled=0 and articleIsHidden=0  and c.categoryIsDisabled=0 order by articleDatetime desc limit 0,10 ;
+	
+	/*阅读排行榜*/
+	select blog_tb_article.articleID,articleTitle,articleClickTimes   
+	from blog_tb_article 
+	left join blog_tb_article_extend e on e.articleID=blog_tb_article.articleID
+	LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+	where blog_tb_article.blogID=?  and articleIsDisabled=0 and articleIsHidden=0 and c.categoryIsDisabled=0
+	order by articleClickTimes desc limit 0,10 ;
+
+	/*评论排行榜*/
+	select blog_tb_article.articleID,articleTitle,articleCommentTimes   
+	from blog_tb_article 
+	left join blog_tb_article_extend e on e.articleID=blog_tb_article.articleID
+	LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+	where blog_tb_article.blogID=? and articleIsDisabled=0 and articleIsHidden=0  and c.categoryIsDisabled=0
+   order by articleCommentTimes desc limit 0,10 ;
+
+	/*按月份的文章档案*/
+
+select yyyy,mm,
+(
+select 
+COUNT(*) 
+from blog_tb_article 
+where articleIsDisabled=0 
+and articleIsHidden=0 
+and  LEFT(concat('0',MONTH(articleDatetime)),2)=mm 
+and YEAR(articleDatetime)=yyyy  and blogID=?
+) as articleCount
+from (
+ SELECT 
+DISTINCT YEAR(articleDatetime) as yyyy,
+LEFT(concat('0',MONTH(articleDatetime)),2) as mm 
+FROM blog_tb_article
+where blogID=? and articleIsDisabled=0 and articleIsHidden=0
+) c  order by CONCAT(yyyy,mm) desc;
+	
+
+    /*获取博客分类*/
+	select ArticleCount,blog_tb_category.categoryID,categoryDisplay ,categoryDomain from blog_tb_category 
+inner join blog_tb_blog on blog_tb_category.blogID=blog_tb_blog.blogID 
+left join (select COUNT(*) as ArticleCount,categoryID 
+from blog_tb_article where blogID=? and articleIsDisabled=0 and articleIsHidden=0 group by categoryID) as table1
+on blog_tb_category.categoryID=table1.categoryID
+where blog_tb_category.blogID=? 
+and ArticleCount>0
+and categoryIsDisabled=0
+order by categoryOrderWeight asc   ;
+
+ /*获取标签 */
+  select  (select COUNT(1) from blog_tb_tagArticle where tagID=blog_tb_tag.tagID) as ArticleCount,blog_tb_tag.tagID,tagDisplay 
+	from blog_tb_tag 
+	inner join blog_tb_blog on blog_tb_tag.blogID=blog_tb_blog.blogID 
+	left join blog_tb_category on blog_tb_tag.categoryID=blog_tb_category.categoryID 
+	left join (select COUNT(1) as ArticleCount,tagID from blog_tb_tagArticle group by tagID) table1
+	on table1.tagID=blog_tb_tag.tagID
+	where blog_tb_tag.blogID=?
+	and ArticleCount>0 
+    order by tagOrder asc   ;
+
+   /*置顶 前5条*/
+	select articleID,articleTitle  from blog_tb_article 
+	LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+	where blog_tb_article.blogID=? and articleIsDisabled=0 and articleIsTop=1 and articleIsHidden=0 and c.categoryIsDisabled=0
+    order by articleDatetime desc limit 0,5  ;
+
+	/*获取随机10条*/
+	select  articleID,articleTitle   from  blog_tb_article
+	LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+	 where blog_tb_article.blogID=? and articleIsDisabled=0 and articleIsHidden=0  and c.categoryIsDisabled=0  order by rand() limit 0,10 ;
+	
+	select * from blog_tb_slider where blogID=?  order by OrderWeight DESC limit 0,5;
+	
+	
+	select 
+    articleID,
+    articlePic,
+    articleTitle
+    from blog_tb_article
+    LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+    where blog_tb_article.blogID=?
+    and blog_tb_article.articleIsDisabled=0
+    and blog_tb_article.articleIsHidden=0
+    and blog_tb_article.articleIsDelete=0
+    and c.categoryIsDisabled=0
+    and articlePic is not null and articlePic<>'' order by articleDatetime desc
+    limit 0,10
+         ]]>
+       
+    </sql>
+    
+     <sql id="getArticlePage">
+            select a.*,
+            b.userID,
+            b.blogName,
+            b.blogTitle,
+            b.blogDomain,
+            c.categoryDomain,
+            c.categoryName,
+            c.categoryDisplay,
+            e.articleClickTimes,
+            e.articleCommentTimes,
+            topic.topicDisplay,
+            ct.articleSubContentHtml,
+            ct.articleSubContentText,
+             '' as tagUrls,'' as tagDisplays 
+            from  blog_tb_article a
+            left JOIN blog_tb_category c on a.categoryID=c.categoryID
+            left join blog_tb_article_extend e on e.articleID=a.articleID
+            left JOIN blog_tb_topic topic on topic.topicID=a.topicID
+            inner join blog_tb_article_content ct on ct.articleID=a.articleID
+            inner join blog_tb_blog b on b.blogID=a.blogID
+            where a.blogID=? and articleIsDisabled=0 and articleIsHidden=0 and articleIsDelete=0 
+            and c.categoryIsDisabled=0
+     </sql>
+     
+     <sql id="tagPage">
+          and a.articleID in (select articleID from  blog_tb_tagArticle  where tagID=?)
+                     order by articleDatetime desc ,articleIsTop DESC,articleOrder DESC
+                     limit {0}    ;
+
+                     select count(*) from blog_tb_article where  articleID in (select articleID from  blog_tb_tagArticle  where tagID=?) and articleIsDisabled=0 and articleIsHidden=0 ;
+
+                     select tagDisplay+'-'+blogTitle as title from blog_tb_tag inner join blog_tb_blog on blog_tb_blog.blogID=blog_tb_tag.blogID where tagID=?;
+     </sql>
+     
+     <sql id="monthPage">
+      and YEAR(articleDatetime)=? and MONTH(articleDatetime)=? 
+                     order by articleDatetime desc ,articleIsTop DESC,articleOrder DESC
+                     limit {0}    ;
+                      
+                    select COUNT(*) from blog_tb_article  where YEAR(articleDatetime)=? and MONTH(articleDatetime)=?  and blogID=? and articleIsDisabled=0 and articleIsHidden=0 ;
+                     
+                    select CONCAT(blogTitle+'-',?,?) as title from blog_tb_blog where blogID=? ;
+                    </sql>
+                    
+     <sql id="categoryPage">
+          and a.categoryID=?
+                     order by articleDatetime desc ,articleIsTop DESC,articleOrder DESC
+                     limit {0}    ;
+                    
+                     select COUNT(*) from blog_tb_article  where categoryID=? and articleIsDisabled=0 and articleIsHidden=0 ;
+
+                     select categoryDisplay+'-'+blogTitle as title from blog_tb_category  inner join blog_tb_blog on blog_tb_blog.blogID=blog_tb_category.blogID  where categoryID=?;
+     </sql>
+     
+      <sql id="indexPage">
+          order by articleDatetime desc ,articleIsTop DESC,articleOrder DESC
+                     limit {0}   ;
+
+                     select COUNT(*) from blog_tb_article  where blogID=?  and articleIsDisabled=0 and articleIsHidden=0 ;
+
+                       select blogTitle as title from blog_tb_blog  where blogID=?;
+     </sql>
+     
+      <sql id="isArticleDisabled">
+            select articleIsDisabled,c.categoryIsDisabled,blogIsDisabled from blog_tb_article a 
+                left join blog_tb_category c on a.categoryID=c.categoryID
+                inner join blog_tb_blog b on b.blogID=a.blogID
+                where a.articleID=?
+      </sql>
+      
+       <sql id="getArticleList">
+             select  blog_tb_article.articleID,articleTitle,articleDatetime,articleClickTimes,articleCommentTimes 
+            from blog_tb_article
+            left join blog_tb_article_extend e on e.articleID=blog_tb_article.articleID
+            LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+             where  blog_tb_article.blogID=? and articleIsDisabled=0 and articleIsHidden=0  and c.categoryIsDisabled=0 order by articleDatetime desc, articleIsTop DESC,articleOrder DESC,articleDatetime DESC
+      </sql>
+      
+        <sql id="getSitemap">
+            select menuUrl, menuDisplay from blog_tb_menu where blogID=? and menuIsDisabled=0 	order by menuOrder DESC;
+            
+            select categoryID,categoryDisplay from blog_tb_category where categoryIsDisabled='0' and blogID=?  order by categoryOrderWeight desc;
+            
+            select yyyy,mm  from (
+             SELECT DISTINCT YEAR(articleDatetime) as yyyy,LEFT(concat('0',MONTH(articleDatetime)),2) as mm FROM blog_tb_article
+            where blogID=? and articleIsDisabled=0 and articleIsHidden=0
+            ) c  order by CONCAT(yyyy,mm) desc;
+            
+             select 
+            articleID,
+            articleTitle,
+            articleDatetime,
+            blog_tb_article.UPDATE_DATE 
+            from blog_tb_article 
+            LEFT JOIN blog_tb_category c on c.categoryID=blog_tb_article.categoryID
+            where blog_tb_article.blogID=?
+            and blog_tb_article.articleIsDisabled=0
+            and blog_tb_article.articleIsHidden=0
+            and blog_tb_article.articleIsDelete=0
+            and c.categoryIsDisabled=0
+            order by articleDatetime desc;
+      </sql>
+      
+        <sql id="getCommentPage">
+              <![CDATA[
+   select blog_tb_commentType.typeID, typeName,typePicUrl,stateCount from (select stateCount,typeID from blog_tb_commentState where articleID=?) table1
+right join blog_tb_commentType on blog_tb_commentType.typeID=table1.typeID order by typeOrder 
+;
+
+select  commentID,commentText,supportCount from blog_tb_comment where articleID=? 
+and commentState=1  
+and LENGTH(commentText)>5 and LENGTH(commentText)<30
+order by supportCount desc,ADD_DATE DESC
+limit 0,100
+;
+
+/*获取评论总数*/
+select COUNT(*) from blog_tb_comment where articleID=?
+;
+
+
+ select * from 
+ (select blog_tb_comment.*,blog_tb_blog.userID as authorUserID,
+ (case when blog_tb_blog.userID=blog_tb_comment.userID then '[楼主]' else '' end) as author,ifnull(cc,0) cc
+from blog_tb_comment 
+inner join blog_view_article on blog_view_article.articleID=blog_tb_comment.articleID 
+inner join blog_tb_blog on blog_tb_blog.blogID=blog_view_article.blogID  
+left join(select parentID,COUNT(*) as cc from blog_tb_comment group by parentID) as table1 on table1.parentID=blog_tb_comment.commentID
+order by ADD_DATE asc
+) table1 where articleID=?    
+limit  {0}
+  ]]>
+      </sql>
+        
+        
+</db>
